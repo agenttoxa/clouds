@@ -8,6 +8,7 @@ function App() {
   const [activeId, setActiveId] = useState(-1);
   const [messages, setMessages] = useState([]);
   const [queue, setQueue] = useState([]);
+  const [timerId, setTimerId] = useState(null);
 
   const getNewMessages = async () => {
     const recursiveShow = (array) => {
@@ -31,7 +32,6 @@ function App() {
     }
 
     const res = await getAllMessages();
-    setMessages(res.data);
 
     let showedMessages = localStorage.getItem('showedMessages');
     if (showedMessages) {
@@ -41,11 +41,13 @@ function App() {
       localStorage.setItem('showedMessages', JSON.stringify([]))
     }
 
+    setMessages(res.data.filter(item => showedMessages.indexOf(item.id) > -1));
+
     if (showedMessages.length < res.data.length) {
-      let unshowedMessages = res.data.filter(item => showedMessages.indexOf(item.id) == -1 && queue.indexOf(item.id) == -1);
-      unshowedMessages = [...queue, ...unshowedMessages]
-      setQueue(unshowedMessages)
-      recursiveShow([...unshowedMessages])
+      let unshowedMessages = res.data.filter(item => showedMessages.indexOf(item.id) == -1);
+      setQueue(prevState => {
+        return  [...prevState, ...unshowedMessages.filter(item => !prevState.find(prevItem => prevItem.id == item.id))]
+      });
     } else if (showedMessages.length > res.data.length) {
       let messagesIds = res.data.map(item => item.id);
       localStorage.setItem('showedMessages', JSON.stringify(messagesIds));
@@ -60,6 +62,27 @@ function App() {
       localStorage.setItem('showedMessages', JSON.stringify(JSON.parse(localStorage.getItem('showedMessages')).filter(item => item != activeId)))
     }
   }
+
+  const showNewMessage = () => {
+    const item = queue.at(-1);
+    const countOfSymbols = item.text.length;
+    const countOfSeconds = countOfSymbols / 25;
+    let showedMessages = JSON.parse(localStorage.getItem('showedMessages'));
+    setMessages(prevState => [...prevState, item])
+    localStorage.setItem('showedMessages', JSON.stringify([...showedMessages, item.id]));
+    setQueue(prevState => [...prevState.filter(el => el.id != item.id)])
+    setActiveId(item.id);
+    let timer = setTimeout(() => {
+      setActiveId(-1);
+    }, countOfSeconds < 5 ? 5000 : countOfSeconds > 30 ? 30000 : countOfSeconds * 1000)
+    setTimerId(timer);
+  }
+
+  useEffect(() => {
+    if (activeId == -1 && queue.length) {
+      showNewMessage()
+    }
+  }, [activeId, queue])
 
   useEffect(() => {
     getNewMessages()
@@ -76,6 +99,9 @@ function App() {
   })
 
   const setCloudActive = (id) => {
+    if (timerId) {
+      clearTimeout(timerId)
+    }
     setActiveId(activeId == id ? -1 : id);
   }
 
