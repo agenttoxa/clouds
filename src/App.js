@@ -1,9 +1,8 @@
-import logo from './logo.svg';
 import './App.css';
 import Cloud from './components/cloud/Cloud.tsx';
 import Bg1 from './assets/bg-1.jpg';
 import { useEffect, useMemo, useState } from 'react';
-import {getAllMessages} from './services/messages.js';
+import {getAllMessages, deleteMessage} from './services/messages.js';
 
 function App() {
   const [activeId, setActiveId] = useState(-1);
@@ -11,11 +10,9 @@ function App() {
   const [queue, setQueue] = useState([]);
 
   const getNewMessages = async () => {
-    console.log('start getNewMessages')
     const recursiveShow = (array) => {
       if (array.length) {
         let item = array.shift();
-        console.log('item: ', item)
         let showedMessages = localStorage.getItem('showedMessages');
         showedMessages = JSON.parse(showedMessages);
         if (showedMessages.indexOf(item.id) == -1) {
@@ -48,26 +45,38 @@ function App() {
       let unshowedMessages = res.data.filter(item => showedMessages.indexOf(item.id) == -1 && queue.indexOf(item.id) == -1);
       unshowedMessages = [...queue, ...unshowedMessages]
       setQueue(unshowedMessages)
-      console.log('unshowedMessages: ', unshowedMessages)
       recursiveShow([...unshowedMessages])
     } else if (showedMessages.length > res.data.length) {
-      let deletedMessages = res.data.filter(item => res.data.indexOf(item) == -1);
-      deletedMessages.forEach
+      let messagesIds = res.data.map(item => item.id);
+      localStorage.setItem('showedMessages', JSON.stringify(messagesIds));
+      setMessages([...res.data])
+    }
+  }
+  
+  const handleDeleteDown = (event) => {
+    if (event.key == 'Delete' && activeId > -1) {
+      deleteMessage(activeId)
+      setMessages(prevState => [...prevState.filter(item => item.id != activeId)]);
+      localStorage.setItem('showedMessages', JSON.stringify(JSON.parse(localStorage.getItem('showedMessages')).filter(item => item != activeId)))
     }
   }
 
   useEffect(() => {
-    console.log('useEffect')
     getNewMessages()
     setInterval(() => {
       getNewMessages()
     }, 10000)
   }, [])
 
+  useEffect(() => {
+    window.addEventListener('keydown', handleDeleteDown)
+    return () => {
+      window.removeEventListener('keydown', handleDeleteDown)
+    }
+  })
+
   const setCloudActive = (id) => {
-    console.log('set id: ', id)
     setActiveId(activeId == id ? -1 : id);
-    //setTimeout(() => {setActiveId(-1)}, 7000)
   }
 
   let clouds = useMemo(() => {
