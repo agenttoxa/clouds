@@ -1,7 +1,7 @@
 import './App.css';
 import Cloud from './components/cloud/Cloud.tsx';
 import Bg1 from './assets/bg-1.jpg';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {getAllMessages, deleteMessage} from './services/messages.js';
 
 function App() {
@@ -9,6 +9,8 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [queue, setQueue] = useState([]);
   const [timerId, setTimerId] = useState(null);
+
+  const refInput = useRef(null);
 
   const getNewMessages = async () => {
     const recursiveShow = (array) => {
@@ -59,12 +61,13 @@ function App() {
     if (event.key == 'Delete' && activeId > -1) {
       deleteMessage(activeId)
       setMessages(prevState => [...prevState.filter(item => item.id != activeId)]);
-      localStorage.setItem('showedMessages', JSON.stringify(JSON.parse(localStorage.getItem('showedMessages')).filter(item => item != activeId)))
+      localStorage.setItem('showedMessages', JSON.stringify(JSON.parse(localStorage.getItem('showedMessages')).filter(item => item != activeId)));
+      setActiveId(-1);
     }
   }
 
   const showNewMessage = () => {
-    const item = queue.at(-1);
+    const item = queue[0];
     const countOfSymbols = item.text.length;
     const countOfSeconds = countOfSymbols / 25;
     let showedMessages = JSON.parse(localStorage.getItem('showedMessages'));
@@ -76,6 +79,20 @@ function App() {
       setActiveId(-1);
     }, countOfSeconds < 5 ? 5000 : countOfSeconds > 30 ? 30000 : countOfSeconds * 1000)
     setTimerId(timer);
+  }
+
+  const inputHandler = (event) => {
+    console.log('input: ', event)
+    if (event.code == 'Enter') {
+      const number = parseInt(refInput.current.value)
+      console.log('input: ', number)
+      if (number && number !== NaN) {
+        let showedMessages = JSON.parse(localStorage.getItem('showedMessages'));
+        if (showedMessages.indexOf(number) > -1) {
+          setActiveId(number);
+        }
+      }
+    }
   }
 
   useEffect(() => {
@@ -134,6 +151,11 @@ function App() {
           text={item.text} 
           author={item.author}
         />)}
+      <input
+        ref={refInput} 
+        style={{position: 'fixed', left: '2rem', bottom: '2rem', background: 'transparent', width: '2rem'}}
+        onKeyDown={inputHandler}
+      />
     </div>
   );
 }
