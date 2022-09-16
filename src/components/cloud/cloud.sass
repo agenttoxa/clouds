@@ -1,0 +1,35 @@
+.cloud
+  position: absolute
+  cursor: pointer
+  &--is-moving
+    transition: all linear
+  &--is-active
+    position: fixed
+    height: 95vh
+    width: auto
+  svg
+    width: 100%
+    height: 100%
+
+  &-message
+    position: absolute
+    top: 0
+    left: auto
+    height: 100%
+    width: 100%
+    display: flex
+    flex-direction: column
+    align-items: center
+    justify-content: center
+    p
+      width: 50%
+      font-size: 2rem
+      max-height: 70%
+      overflow: hidden
+    span
+      font-size: 1.2rem
+      background: black
+      color: white
+      border: 1px solid black
+      border-radius: 25px
+      padding: 9px
